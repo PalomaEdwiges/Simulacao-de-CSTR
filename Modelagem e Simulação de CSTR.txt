@@ -1,0 +1,70 @@
+%Paloma Edwiges Frade Ferreira 
+
+clc
+clear all
+close all
+global vi Ca0 Cb0 Cc0 Ti V CpA CpB CpC Tv UA Ca_0 deltaHr0 k0 Ea_R Cb_0 Cc_0
+ 
+%Declaração das variáveis
+deltaHr0 = 8; %Entalpia padrão de reação (kJ/mol)
+Ti = 298; %Temperatura em que a A reage (K)
+UA = 0.0005; %Coeficiente global de troca térmica (kW/K)
+Tv = Ti; %Temperatura da vizinhança (K)
+V = 20; %Volume do reator (m3)
+CpA = 0.050; %Calor específico de A (J/mol)
+CpB = 0.120; %Calor específico de B (J/mol)
+CpC = 0.090; % Caloe específico de C (J/mol)
+k0 = 3; %Constante da reação (s-1)
+Ea_R = 1000; %Energia de ativação sobre constante dos gases (K)
+Ca_0 = 0.1; %Concentração inicial do reagente A presente no reator(mol/m3)
+Cb_0 = 0;%Concentração inicial do reagente B presente no reator(mol/m3)
+Cc_0 = 0;%Concentração inicial do reagente C presente no reator(mol/m3)
+Ca0 = 1; %Concentração de A no inicio do processo (mol/m3)
+Cb0 = 0.5; %Concentração de B no inicio do processo (mol/m3)
+Cc0 = 0; %Concentração de C no inicio do processo (mol/m3)
+vi = 0.1; %Vazão inicial de entrada (m3/s)
+ 
+%Solução do Modelo
+tspan = [0 1800]; %Intervalo de tempo no qual a ED vai ser integrada (s);
+Y0 = [Ca_0; Cb_0; Cc_0; Ti]
+[time, solucao] = ode45('CSTR', tspan, Y0); %solver ODE45 para resolução da ED
+yyaxis left
+plot(time,solucao(:,[1,2,3]))
+title('CSTR');
+xlabel('Tempo (s)');
+ylabel('Concentração (mol/m3)');
+yyaxis right
+plot(time,solucao(:,4))
+xlabel('Tempo (s)');
+ylabel('Temperatura (K)');
+legend ('Conc. A', 'Conc. B', 'Conc. C', 'Temperatura')
+
+%Criação da função CSTR
+function dy = CSTR(t, y)
+global vi Ca0 Cb0 Cc0 Ti V CpA CpB CpC Tv UA Ca_0 deltaHr0 k0 Ea_R Cb_0 Cc_0
+ 
+Ca = y(1);
+Cb = y(2);
+Cc = y(3);
+T = y(4);
+ 
+Fa0 = Ca0*vi;
+Fb0 = Cb0*vi;
+Fc0 = Cc0*vi;
+ 
+Fa = Ca*vi;
+Fb = Cb*vi;
+Fc = Cc*vi;
+ 
+k = k0*exp(-Ea_R/T);
+ra = -k*Ca*Cb^2;
+Qe = UA*(Tv-T);
+ 
+dCa = (ra*V+vi*(Ca0-Ca))/V;
+dCb = (ra*V+vi*(Cb0-Cb))/V;
+dCc = (-2*ra*V+vi*(Cc0-Cc))/V;
+ 
+dT = (Qe-(Fa0*CpA+Fb0*CpB+Fc0*CpC)*(T-Ti)+ra*V*(deltaHr0+(2*CpC-CpB-CpA)*(T-Tv)))/(Ca*V*CpA+Cb*V*CpB+Cc*V*CpC);
+ 
+dy = [dCa; dCb; dCc; dT];
+end
